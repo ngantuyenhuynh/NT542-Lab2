@@ -32,13 +32,14 @@ resource "aws_security_group" "web_sg" {
 
 resource "aws_instance" "web" {
   ami           = "ami-0fa377108253bf620" 
-  instance_type = "t2.micro"
+  instance_type = "t2.micro" # Bắt buộc phải giữ đúng t2.micro cho Lab
   subnet_id     = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
-  # Các cấu hình thêm vào để pass Checkov
-  monitoring    = true # Pass CKV_AWS_126
-  ebs_optimized = true # Pass CKV_AWS_135
+  # Đã xóa monitoring=true và ebs_optimized=true. Dùng skip để qua mặt Checkov:
+  # checkov:skip=CKV_AWS_135: t2.micro không hỗ trợ EBS Optimized
+  # checkov:skip=CKV_AWS_126: Detailed monitoring tốn phí, AWS Academy sẽ chặn
+  # checkov:skip=CKV2_AWS_41: Lab này chưa yêu cầu cấp IAM Role cho EC2
 
   # Ép buộc dùng IMDSv2 để pass CKV_AWS_79
   metadata_options {
@@ -55,6 +56,4 @@ resource "aws_instance" "web" {
   tags = {
     Name = "Lab2-WebServer"
   }
-  
-  # checkov:skip=CKV2_AWS_41: Lab này chưa yêu cầu cấp IAM Role cho EC2
 }
