@@ -9,6 +9,7 @@ resource "aws_security_group" "web_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    # checkov:skip=CKV_AWS_260: Lab yêu cầu mở port 80 public cho web server
   }
 
   ingress {
@@ -16,26 +17,44 @@ resource "aws_security_group" "web_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    # LƯU Ý: Checkov sẽ đánh rớt (Failed) nếu để 0.0.0.0/0 ở port 22. 
-    # Cần thay bằng IP public của bạn hoặc dải IP cụ thể của UIT/công ty.
     cidr_blocks = ["115.79.0.0/16"] 
   }
 
   egress {
+    description = "Allow all outbound traffic" # Đã thêm description để pass CKV_AWS_23
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    # checkov:skip=CKV_AWS_382: Cho phép egress ra internet để cài đặt package
   }
 }
 
 resource "aws_instance" "web" {
-  ami           = "ami-0fa377108253bf620" # Amazon Linux 2023 ở ap-southeast-1
+  ami           = "ami-0fa377108253bf620" 
   instance_type = "t2.micro"
   subnet_id     = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
+  # Các cấu hình thêm vào để pass Checkov
+  monitoring    = true # Pass CKV_AWS_126
+  ebs_optimized = true # Pass CKV_AWS_135
+
+  # Ép buộc dùng IMDSv2 để pass CKV_AWS_79
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+
+  # Mã hóa ổ cứng để pass CKV_AWS_8
+  root_block_device {
+    encrypted = true
+  }
+
   tags = {
     Name = "Lab2-WebServer"
   }
+  
+  # checkov:skip=CKV2_AWS_41: Lab này chưa yêu cầu cấp IAM Role cho EC2
 }
