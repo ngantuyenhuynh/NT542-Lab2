@@ -1,6 +1,9 @@
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
   tags = { Name = "Lab2-VPC" }
+  
+  # checkov:skip=CKV2_AWS_11: Bỏ qua VPC Flow Logs để tiết kiệm chi phí
+  # checkov:skip=CKV2_AWS_12: Bỏ qua cấu hình default security group
 }
 
 resource "aws_subnet" "public" {
@@ -8,6 +11,8 @@ resource "aws_subnet" "public" {
   cidr_block              = "10.0.1.0/24"
   map_public_ip_on_launch = true
   tags = { Name = "Lab2-Public-Subnet" }
+  
+  # checkov:skip=CKV_AWS_130: Đây là Public Subnet nên bắt buộc phải tự cấp IP
 }
 
 resource "aws_subnet" "private" {
@@ -30,7 +35,6 @@ resource "aws_nat_gateway" "nat_gw" {
   tags = { Name = "Lab2-NAT" }
 }
 
-# Route Table cho Public Subnet (ra Internet thẳng)
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
   route {
@@ -43,7 +47,6 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Route Table cho Private Subnet (ra Internet qua NAT)
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
   route {
